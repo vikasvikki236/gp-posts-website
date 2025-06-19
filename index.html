@@ -8,19 +8,19 @@
     body { padding: 20px; }
     table { font-size: 14px; }
     th, td { text-align: center; vertical-align: middle; }
-    select { margin-right: 10px; }
+    select { margin-right: 10px; width: 200px; display: inline-block; }
   </style>
 </head>
 <body>
   <h2>GP-wise Post Availability</h2>
   <div class="mb-3">
-    <select id="districtFilter" class="form-select d-inline" style="width: 200px;">
+    <select id="districtFilter" class="form-select">
       <option value="">All Districts</option>
     </select>
-    <select id="mandalFilter" class="form-select d-inline" style="width: 200px;">
+    <select id="mandalFilter" class="form-select">
       <option value="">All Mandals</option>
     </select>
-    <select id="gpFilter" class="form-select d-inline" style="width: 200px;">
+    <select id="gpFilter" class="form-select">
       <option value="">All GPs</option>
     </select>
   </div>
@@ -32,37 +32,73 @@
       <tbody id="tableBody"></tbody>
     </table>
   </div>
+
   <script>
     let data = [];
+
     fetch('gp_post_data.json')
       .then(res => res.json())
       .then(json => {
         data = json;
-        populateFilters();
+        populateDistricts();
         renderTable(data);
       });
 
-    function populateFilters() {
-      const districts = new Set(data.map(d => d['District']));
-      const mandals = new Set(data.map(d => d['Mandal']));
-      const gps = new Set(data.map(d => d['GP Name']));
+    function populateDistricts() {
+      const districts = [...new Set(data.map(d => d['District']))].sort();
+      const districtSelect = document.getElementById('districtFilter');
+      districts.forEach(d => {
+        const option = document.createElement('option');
+        option.value = d;
+        option.textContent = d;
+        districtSelect.appendChild(option);
+      });
 
-      fillOptions('districtFilter', districts);
-      fillOptions('mandalFilter', mandals);
-      fillOptions('gpFilter', gps);
+      districtSelect.onchange = () => {
+        populateMandals();
+        populateGPs();
+        filterData();
+      };
 
-      document.getElementById('districtFilter').onchange = filterData;
-      document.getElementById('mandalFilter').onchange = filterData;
+      document.getElementById('mandalFilter').onchange = () => {
+        populateGPs();
+        filterData();
+      };
+
       document.getElementById('gpFilter').onchange = filterData;
     }
 
-    function fillOptions(id, values) {
-      const select = document.getElementById(id);
-      [...values].sort().forEach(v => {
-        const opt = document.createElement('option');
-        opt.value = v;
-        opt.textContent = v;
-        select.appendChild(opt);
+    function populateMandals() {
+      const district = document.getElementById('districtFilter').value;
+      const mandalSelect = document.getElementById('mandalFilter');
+      mandalSelect.innerHTML = '<option value="">All Mandals</option>';
+
+      const filtered = district ? data.filter(d => d['District'] === district) : data;
+      const mandals = [...new Set(filtered.map(d => d['Mandal']))].sort();
+      mandals.forEach(m => {
+        const option = document.createElement('option');
+        option.value = m;
+        option.textContent = m;
+        mandalSelect.appendChild(option);
+      });
+    }
+
+    function populateGPs() {
+      const district = document.getElementById('districtFilter').value;
+      const mandal = document.getElementById('mandalFilter').value;
+      const gpSelect = document.getElementById('gpFilter');
+      gpSelect.innerHTML = '<option value="">All GPs</option>';
+
+      let filtered = data;
+      if (district) filtered = filtered.filter(d => d['District'] === district);
+      if (mandal) filtered = filtered.filter(d => d['Mandal'] === mandal);
+
+      const gps = [...new Set(filtered.map(d => d['GP Name']))].sort();
+      gps.forEach(gp => {
+        const option = document.createElement('option');
+        option.value = gp;
+        option.textContent = gp;
+        gpSelect.appendChild(option);
       });
     }
 
