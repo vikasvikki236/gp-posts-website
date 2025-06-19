@@ -11,13 +11,12 @@
     .dropdowns { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
     select { width: 200px; }
     .logo { position: absolute; top: 20px; right: 30px; height: 60px; }
-    th, td { text-align: center; vertical-align: middle; font-size: 14px; }
+    .table-section { margin-top: 20px; }
   </style>
 </head>
 <body>
 
   <img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/GSWS_AP_logo.png" alt="Logo" class="logo">
-
   <h2 class="title">Welcome to the GSWS Rationalization Data</h2>
   <div class="subtitle">Created by Association of Recruited Employees</div>
 
@@ -33,12 +32,7 @@
     </select>
   </div>
 
-  <div class="table-responsive">
-    <table class="table table-bordered table-striped" id="gpTable">
-      <thead class="table-dark"><tr id="tableHeader"></tr></thead>
-      <tbody id="tableBody"></tbody>
-    </table>
-  </div>
+  <div id="results" class="container text-center"></div>
 
   <script>
     let data = [];
@@ -48,7 +42,6 @@
       .then(json => {
         data = json;
         populateDistricts();
-        filterData();
       });
 
     function populateDistricts() {
@@ -64,15 +57,17 @@
       districtSelect.onchange = () => {
         populateMandals();
         populateGPs();
-        filterData();
+        clearResults();
       };
 
       document.getElementById("mandalFilter").onchange = () => {
         populateGPs();
-        filterData();
+        clearResults();
       };
 
-      document.getElementById("gpFilter").onchange = filterData;
+      document.getElementById("gpFilter").onchange = () => {
+        showAvailability();
+      };
     }
 
     function populateMandals() {
@@ -114,44 +109,62 @@
       });
     }
 
-    function filterData() {
+    function clearResults() {
+      document.getElementById("results").innerHTML = '';
+    }
+
+    function showAvailability() {
       const district = document.getElementById("districtFilter").value;
       const mandal = document.getElementById("mandalFilter").value;
       const gp = document.getElementById("gpFilter").value;
 
-      const filtered = data.filter(d =>
-        (!district || d['District'] === district) &&
-        (!mandal || d['Mandal'] === mandal) &&
-        (!gp || d['GP Name'] === gp)
+      if (!district || !mandal || !gp) {
+        clearResults();
+        return;
+      }
+
+      const filtered = data.find(d =>
+        d['District'] === district &&
+        d['Mandal'] === mandal &&
+        d['GP Name'] === gp
       );
 
-      renderTable(filtered);
-    }
+      if (!filtered) {
+        document.getElementById("results").innerHTML = '<p>No data found for this GP.</p>';
+        return;
+      }
 
-    function renderTable(filteredData) {
-      const tableHeader = document.getElementById("tableHeader");
-      const tableBody = document.getElementById("tableBody");
-      tableHeader.innerHTML = "";
-      tableBody.innerHTML = "";
+      const available = [];
+      const notAvailable = [];
 
-      if (filteredData.length === 0) return;
+      for (const key in filtered) {
+        if (['S.no.', 'District', 'Mandal', 'Cluster Code', 'Sachivalayam Code', 'GP Name'].includes(key)) continue;
+        if (filtered[key].toLowerCase() === 'yes') {
+          available.push(key);
+        } else if (filtered[key].toLowerCase() === 'no') {
+          notAvailable.push(key);
+        }
+      }
 
-      const columns = Object.keys(filteredData[0]);
-      columns.forEach(col => {
-        const th = document.createElement("th");
-        th.textContent = col;
-        tableHeader.appendChild(th);
-      });
+      const resultHTML = `
+        <div class="table-section">
+          <h4>✅ Available Posts</h4>
+          <table class="table table-bordered table-success">
+            <thead><tr><th>Post Name</th></tr></thead>
+            <tbody>${available.map(p => `<tr><td>${p}</td></tr>`).join('')}</tbody>
+          </table>
+        </div>
 
-      filteredData.forEach(row => {
-        const tr = document.createElement("tr");
-        columns.forEach(col => {
-          const td = document.createElement("td");
-          td.textContent = row[col];
-          tr.appendChild(td);
-        });
-        tableBody.appendChild(tr);
-      });
+        <div class="table-section">
+          <h4>❌ Not Available Posts</h4>
+          <table class="table table-bordered table-danger">
+            <thead><tr><th>Post Name</th></tr></thead>
+            <tbody>${notAvailable.map(p => `<tr><td>${p}</td></tr>`).join('')}</tbody>
+          </table>
+        </div>
+      `;
+
+      document.getElementById("results").innerHTML = resultHTML;
     }
   </script>
 </body>
