@@ -1,26 +1,35 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>GP Post Availability</title>
+  <title>GSWS Rationalization Data</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body { padding: 20px; }
-    select { width: 200px; margin-right: 10px; }
+    .title { text-align: center; }
+    .subtitle { text-align: center; font-size: 18px; color: #555; margin-bottom: 20px; }
+    .dropdowns { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    select { width: 200px; }
+    .logo { position: absolute; top: 20px; right: 30px; height: 60px; }
     th, td { text-align: center; vertical-align: middle; font-size: 14px; }
   </style>
 </head>
 <body>
-  <h2>GP-wise Post Availability</h2>
-  <div class="mb-3">
-    <select id="districtFilter" class="form-select d-inline">
-      <option value="">All Districts</option>
+
+  <img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/GSWS_AP_logo.png" alt="Logo" class="logo">
+
+  <h2 class="title">Welcome to the GSWS Rationalization Data</h2>
+  <div class="subtitle">Created by Association of Recruited Employees</div>
+
+  <div class="dropdowns">
+    <select id="districtFilter" class="form-select">
+      <option value="">Choose District</option>
     </select>
-    <select id="mandalFilter" class="form-select d-inline">
-      <option value="">All Mandals</option>
+    <select id="mandalFilter" class="form-select">
+      <option value="">Choose Mandal</option>
     </select>
-    <select id="gpFilter" class="form-select d-inline">
-      <option value="">All GPs</option>
+    <select id="gpFilter" class="form-select">
+      <option value="">Choose GP</option>
     </select>
   </div>
 
@@ -68,13 +77,12 @@
 
     function populateMandals() {
       const mandalSelect = document.getElementById("mandalFilter");
-      mandalSelect.innerHTML = '<option value="">All Mandals</option>';
+      mandalSelect.innerHTML = '<option value="">Choose Mandal</option>';
       const selectedDistrict = document.getElementById("districtFilter").value;
 
       const mandals = [...new Set(
-        data
-          .filter(d => !selectedDistrict || d['District'] === selectedDistrict)
-          .map(d => d['Mandal'])
+        data.filter(d => !selectedDistrict || d['District'] === selectedDistrict)
+            .map(d => d['Mandal'])
       )].sort();
 
       mandals.forEach(m => {
@@ -87,17 +95,15 @@
 
     function populateGPs() {
       const gpSelect = document.getElementById("gpFilter");
-      gpSelect.innerHTML = '<option value="">All GPs</option>';
-      const selectedDistrict = document.getElementById("districtFilter").value;
-      const selectedMandal = document.getElementById("mandalFilter").value;
+      gpSelect.innerHTML = '<option value="">Choose GP</option>';
+      const district = document.getElementById("districtFilter").value;
+      const mandal = document.getElementById("mandalFilter").value;
 
       const gps = [...new Set(
-        data
-          .filter(d =>
-            (!selectedDistrict || d['District'] === selectedDistrict) &&
-            (!selectedMandal || d['Mandal'] === selectedMandal)
-          )
-          .map(d => d['GP Name'])
+        data.filter(d =>
+          (!district || d['District'] === district) &&
+          (!mandal || d['Mandal'] === mandal)
+        ).map(d => d['GP Name'])
       )].sort();
 
       gps.forEach(g => {
