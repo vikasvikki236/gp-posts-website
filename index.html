@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>GP Post Availability</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { padding: 20px; }
+    table { font-size: 14px; }
+    th, td { text-align: center; vertical-align: middle; }
+    select { margin-right: 10px; }
+  </style>
+</head>
+<body>
+  <h2>GP-wise Post Availability</h2>
+  <div class="mb-3">
+    <select id="districtFilter" class="form-select d-inline" style="width: 200px;">
+      <option value="">All Districts</option>
+    </select>
+    <select id="mandalFilter" class="form-select d-inline" style="width: 200px;">
+      <option value="">All Mandals</option>
+    </select>
+    <select id="gpFilter" class="form-select d-inline" style="width: 200px;">
+      <option value="">All GPs</option>
+    </select>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-bordered table-striped" id="gpTable">
+      <thead class="table-dark">
+        <tr id="tableHeader"></tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+  <script>
+    let data = [];
+    fetch('gp_post_data.json')
+      .then(res => res.json())
+      .then(json => {
+        data = json;
+        populateFilters();
+        renderTable(data);
+      });
+
+    function populateFilters() {
+      const districts = new Set(data.map(d => d['District']));
+      const mandals = new Set(data.map(d => d['Mandal']));
+      const gps = new Set(data.map(d => d['GP Name']));
+
+      fillOptions('districtFilter', districts);
+      fillOptions('mandalFilter', mandals);
+      fillOptions('gpFilter', gps);
+
+      document.getElementById('districtFilter').onchange = filterData;
+      document.getElementById('mandalFilter').onchange = filterData;
+      document.getElementById('gpFilter').onchange = filterData;
+    }
+
+    function fillOptions(id, values) {
+      const select = document.getElementById(id);
+      [...values].sort().forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v;
+        opt.textContent = v;
+        select.appendChild(opt);
+      });
+    }
+
+    function filterData() {
+      const district = document.getElementById('districtFilter').value;
+      const mandal = document.getElementById('mandalFilter').value;
+      const gp = document.getElementById('gpFilter').value;
+
+      const filtered = data.filter(d =>
+        (!district || d['District'] === district) &&
+        (!mandal || d['Mandal'] === mandal) &&
+        (!gp || d['GP Name'] === gp)
+      );
+
+      renderTable(filtered);
+    }
+
+    function renderTable(data) {
+      const tableHeader = document.getElementById('tableHeader');
+      const tableBody = document.getElementById('tableBody');
+      tableHeader.innerHTML = '';
+      tableBody.innerHTML = '';
+
+      if (data.length === 0) return;
+
+      const columns = Object.keys(data[0]);
+      columns.forEach(col => {
+        const th = document.createElement('th');
+        th.textContent = col;
+        tableHeader.appendChild(th);
+      });
+
+      data.forEach(row => {
+        const tr = document.createElement('tr');
+        columns.forEach(col => {
+          const td = document.createElement('td');
+          td.textContent = row[col];
+          tr.appendChild(td);
+        });
+        tableBody.appendChild(tr);
+      });
+    }
+  </script>
+</body>
+</html>
