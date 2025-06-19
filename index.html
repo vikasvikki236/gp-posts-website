@@ -6,29 +6,27 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body { padding: 20px; }
-    table { font-size: 14px; }
-    th, td { text-align: center; vertical-align: middle; }
-    select { margin-right: 10px; width: 200px; display: inline-block; }
+    select { width: 200px; margin-right: 10px; }
+    th, td { text-align: center; vertical-align: middle; font-size: 14px; }
   </style>
 </head>
 <body>
   <h2>GP-wise Post Availability</h2>
   <div class="mb-3">
-    <select id="districtFilter" class="form-select">
+    <select id="districtFilter" class="form-select d-inline">
       <option value="">All Districts</option>
     </select>
-    <select id="mandalFilter" class="form-select">
+    <select id="mandalFilter" class="form-select d-inline">
       <option value="">All Mandals</option>
     </select>
-    <select id="gpFilter" class="form-select">
+    <select id="gpFilter" class="form-select d-inline">
       <option value="">All GPs</option>
     </select>
   </div>
+
   <div class="table-responsive">
     <table class="table table-bordered table-striped" id="gpTable">
-      <thead class="table-dark">
-        <tr id="tableHeader"></tr>
-      </thead>
+      <thead class="table-dark"><tr id="tableHeader"></tr></thead>
       <tbody id="tableBody"></tbody>
     </table>
   </div>
@@ -37,21 +35,21 @@
     let data = [];
 
     fetch('gp_post_data.json')
-      .then(res => res.json())
+      .then(response => response.json())
       .then(json => {
         data = json;
         populateDistricts();
-        renderTable(data);
+        filterData();
       });
 
     function populateDistricts() {
+      const districtSelect = document.getElementById("districtFilter");
       const districts = [...new Set(data.map(d => d['District']))].sort();
-      const districtSelect = document.getElementById('districtFilter');
       districts.forEach(d => {
-        const option = document.createElement('option');
-        option.value = d;
-        option.textContent = d;
-        districtSelect.appendChild(option);
+        const opt = document.createElement("option");
+        opt.value = d;
+        opt.textContent = d;
+        districtSelect.appendChild(opt);
       });
 
       districtSelect.onchange = () => {
@@ -60,52 +58,60 @@
         filterData();
       };
 
-      document.getElementById('mandalFilter').onchange = () => {
+      document.getElementById("mandalFilter").onchange = () => {
         populateGPs();
         filterData();
       };
 
-      document.getElementById('gpFilter').onchange = filterData;
+      document.getElementById("gpFilter").onchange = filterData;
     }
 
     function populateMandals() {
-      const district = document.getElementById('districtFilter').value;
-      const mandalSelect = document.getElementById('mandalFilter');
+      const mandalSelect = document.getElementById("mandalFilter");
       mandalSelect.innerHTML = '<option value="">All Mandals</option>';
+      const selectedDistrict = document.getElementById("districtFilter").value;
 
-      const filtered = district ? data.filter(d => d['District'] === district) : data;
-      const mandals = [...new Set(filtered.map(d => d['Mandal']))].sort();
+      const mandals = [...new Set(
+        data
+          .filter(d => !selectedDistrict || d['District'] === selectedDistrict)
+          .map(d => d['Mandal'])
+      )].sort();
+
       mandals.forEach(m => {
-        const option = document.createElement('option');
-        option.value = m;
-        option.textContent = m;
-        mandalSelect.appendChild(option);
+        const opt = document.createElement("option");
+        opt.value = m;
+        opt.textContent = m;
+        mandalSelect.appendChild(opt);
       });
     }
 
     function populateGPs() {
-      const district = document.getElementById('districtFilter').value;
-      const mandal = document.getElementById('mandalFilter').value;
-      const gpSelect = document.getElementById('gpFilter');
+      const gpSelect = document.getElementById("gpFilter");
       gpSelect.innerHTML = '<option value="">All GPs</option>';
+      const selectedDistrict = document.getElementById("districtFilter").value;
+      const selectedMandal = document.getElementById("mandalFilter").value;
 
-      let filtered = data;
-      if (district) filtered = filtered.filter(d => d['District'] === district);
-      if (mandal) filtered = filtered.filter(d => d['Mandal'] === mandal);
+      const gps = [...new Set(
+        data
+          .filter(d =>
+            (!selectedDistrict || d['District'] === selectedDistrict) &&
+            (!selectedMandal || d['Mandal'] === selectedMandal)
+          )
+          .map(d => d['GP Name'])
+      )].sort();
 
-      const gps = [...new Set(filtered.map(d => d['GP Name']))].sort();
-      gps.forEach(gp => {
-        const option = document.createElement('option');
-        option.value = gp;
-        option.textContent = gp;
-        gpSelect.appendChild(option);
+      gps.forEach(g => {
+        const opt = document.createElement("option");
+        opt.value = g;
+        opt.textContent = g;
+        gpSelect.appendChild(opt);
       });
     }
 
     function filterData() {
-      const district = document.getElementById('districtFilter').value;
-      const mandal = document.getElementById('mandalFilter').value;
-      const gp = document.getElementById('gpFilter').value;
+      const district = document.getElementById("districtFilter").value;
+      const mandal = document.getElementById("mandalFilter").value;
+      const gp = document.getElementById("gpFilter").value;
 
       const filtered = data.filter(d =>
         (!district || d['District'] === district) &&
@@ -116,25 +122,25 @@
       renderTable(filtered);
     }
 
-    function renderTable(data) {
-      const tableHeader = document.getElementById('tableHeader');
-      const tableBody = document.getElementById('tableBody');
-      tableHeader.innerHTML = '';
-      tableBody.innerHTML = '';
+    function renderTable(filteredData) {
+      const tableHeader = document.getElementById("tableHeader");
+      const tableBody = document.getElementById("tableBody");
+      tableHeader.innerHTML = "";
+      tableBody.innerHTML = "";
 
-      if (data.length === 0) return;
+      if (filteredData.length === 0) return;
 
-      const columns = Object.keys(data[0]);
+      const columns = Object.keys(filteredData[0]);
       columns.forEach(col => {
-        const th = document.createElement('th');
+        const th = document.createElement("th");
         th.textContent = col;
         tableHeader.appendChild(th);
       });
 
-      data.forEach(row => {
-        const tr = document.createElement('tr');
+      filteredData.forEach(row => {
+        const tr = document.createElement("tr");
         columns.forEach(col => {
-          const td = document.createElement('td');
+          const td = document.createElement("td");
           td.textContent = row[col];
           tr.appendChild(td);
         });
