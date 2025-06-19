@@ -23,6 +23,10 @@
   <div class="dropdowns">
     <select id="districtFilter" class="form-select">
       <option value="">Choose District</option>
+      <option value="ANANTAPUR">ANANTAPUR</option>
+      <option value="SRI SATHYA SAI">SRI SATHYA SAI</option>
+      <option value="CHITTOOR">CHITTOOR</option>
+      <!-- Add more districts as needed -->
     </select>
     <select id="mandalFilter" class="form-select">
       <option value="">Choose Mandal</option>
@@ -37,48 +41,27 @@
   <script>
     let data = [];
 
-    fetch('gp_post_data.json')
-      .then(response => response.json())
-      .then(json => {
-        data = json;
-        populateDistricts();
-      });
+    document.getElementById("districtFilter").onchange = () => {
+      const selectedDistrict = document.getElementById("districtFilter").value;
+      document.getElementById("mandalFilter").innerHTML = '<option value="">Choose Mandal</option>';
+      document.getElementById("gpFilter").innerHTML = '<option value="">Choose GP</option>';
+      document.getElementById("results").innerHTML = '';
 
-    function populateDistricts() {
-      const districtSelect = document.getElementById("districtFilter");
-      const districts = [...new Set(data.map(d => d['District']))].sort();
-      districts.forEach(d => {
-        const opt = document.createElement("option");
-        opt.value = d;
-        opt.textContent = d;
-        districtSelect.appendChild(opt);
-      });
+      if (!selectedDistrict) return;
 
-      districtSelect.onchange = () => {
-        populateMandals();
-        populateGPs();
-        clearResults();
-      };
-
-      document.getElementById("mandalFilter").onchange = () => {
-        populateGPs();
-        clearResults();
-      };
-
-      document.getElementById("gpFilter").onchange = () => {
-        showAvailability();
-      };
-    }
+      fetch(`data/${selectedDistrict}.json`)
+        .then(response => response.json())
+        .then(json => {
+          data = json;
+          populateMandals();
+        });
+    };
 
     function populateMandals() {
       const mandalSelect = document.getElementById("mandalFilter");
-      mandalSelect.innerHTML = '<option value="">Choose Mandal</option>';
       const selectedDistrict = document.getElementById("districtFilter").value;
-
-      const mandals = [...new Set(
-        data.filter(d => !selectedDistrict || d['District'] === selectedDistrict)
-            .map(d => d['Mandal'])
-      )].sort();
+      const mandals = [...new Set(data.map(d => d['Mandal']))].sort();
+      mandalSelect.innerHTML = '<option value="">Choose Mandal</option>';
 
       mandals.forEach(m => {
         const opt = document.createElement("option");
@@ -86,20 +69,18 @@
         opt.textContent = m;
         mandalSelect.appendChild(opt);
       });
+
+      mandalSelect.onchange = () => {
+        populateGPs();
+        document.getElementById("results").innerHTML = '';
+      };
     }
 
     function populateGPs() {
       const gpSelect = document.getElementById("gpFilter");
-      gpSelect.innerHTML = '<option value="">Choose GP</option>';
-      const district = document.getElementById("districtFilter").value;
       const mandal = document.getElementById("mandalFilter").value;
-
-      const gps = [...new Set(
-        data.filter(d =>
-          (!district || d['District'] === district) &&
-          (!mandal || d['Mandal'] === mandal)
-        ).map(d => d['GP Name'])
-      )].sort();
+      const gps = [...new Set(data.filter(d => d['Mandal'] === mandal).map(d => d['GP Name']))].sort();
+      gpSelect.innerHTML = '<option value="">Choose GP</option>';
 
       gps.forEach(g => {
         const opt = document.createElement("option");
@@ -107,10 +88,10 @@
         opt.textContent = g;
         gpSelect.appendChild(opt);
       });
-    }
 
-    function clearResults() {
-      document.getElementById("results").innerHTML = '';
+      gpSelect.onchange = () => {
+        showAvailability();
+      };
     }
 
     function showAvailability() {
@@ -119,15 +100,11 @@
       const gp = document.getElementById("gpFilter").value;
 
       if (!district || !mandal || !gp) {
-        clearResults();
+        document.getElementById("results").innerHTML = '';
         return;
       }
 
-      const filtered = data.find(d =>
-        d['District'] === district &&
-        d['Mandal'] === mandal &&
-        d['GP Name'] === gp
-      );
+      const filtered = data.find(d => d['District'] === district && d['Mandal'] === mandal && d['GP Name'] === gp);
 
       if (!filtered) {
         document.getElementById("results").innerHTML = '<p>No data found for this GP.</p>';
